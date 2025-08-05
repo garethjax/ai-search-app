@@ -16,8 +16,21 @@ import sys
 from dotenv import load_dotenv
 load_dotenv()
 
+# Import configuration
+from config import config
+
 def setup_cli_logging(verbose=False):
-    level = logging.DEBUG if verbose else logging.INFO
+    # Use configuration for log level
+    if verbose:
+        level = logging.DEBUG
+    else:
+        level_map = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR
+        }
+        level = level_map.get(config.app.log_level, logging.INFO)
 
     class ColoredFormatter(logging.Formatter):
         COLORS = {
@@ -85,9 +98,9 @@ class ResearchAnswer:
     raw_sources_data: List[Dict]
 
 class SimpleAIClient:
-    def __init__(self, model="llama3.1:8b"):
-        self.base_url = "http://localhost:11434"
-        self.model = model
+    def __init__(self, model=None):
+        self.base_url = config.llm.ollama_base_url
+        self.model = model or config.llm.ollama_model
 
     def generate(self, prompt: str, temperature: float = 0.3, num_predict: int = 1000) -> str:
         try:
@@ -140,14 +153,7 @@ class EnhancedPerplexityResearcher:
 
     # ===== METODI DI SEARCH ENGINE ======
     def _search_searx_enhanced(self, query: str) -> List[SearchResult]:
-        instances = [
-            'https://searx.be',
-            'https://search.sapti.me',
-            'https://searx.prvcy.eu',
-            'https://searx.tiekoetter.com',
-            'https://northboot.xyz',
-            'https://searx.work'
-        ]
+        instances = config.get_searx_instances()
         time_range = None
         match = re.search(r'\b(1d|1w|1m|1y)\b', query)
         if match:
@@ -220,7 +226,7 @@ class EnhancedPerplexityResearcher:
         return []
 
     def _search_brave_enhanced(self, query: str) -> List[SearchResult]:
-        api_key = os.getenv("BRAVE_API_KEY")
+        api_key = config.get_brave_api_key()
         if not api_key:
             logger.debug("❌ BRAVE_API_KEY not set in environment variables.")
             return []
@@ -574,7 +580,16 @@ class EnhancedPerplexityResearcher:
             sources_text += source_info
             logger.debug(f"   📖 Source {i}: {source.title[:50]}... ({source.source_engine})")
         logger.info(f"   📝 Prepared {len(sources)} sources for AI analysis")
-        prompt = f"""You are a research assistant like Perplexity AI. Answer the question using the provided sources with citations.
+        
+        # Load prompt template from file
+        try:
+            with open('prompts/research_assistant.txt', 'r', encoding='utf-8') as f:
+                prompt_template = f.read()
+            prompt = prompt_template.format(query=query, sources_text=sources_text)
+            logger.debug(f"   📝 Loaded prompt template from file")
+        except FileNotFoundError:
+            logger.warning(f"   ⚠️ Prompt file not found, using fallback")
+            prompt = f"""You are a research assistant like Perplexity AI. Answer the question using the provided sources with citations.
 
 QUESTION: {query}
 
@@ -632,7 +647,15 @@ Write a clear, informative answer with proper citations:"""
 
     def _generate_fallback_answer(self, query: str) -> str:
         logger.info(f"   🔄 Generating fallback answer for: {query}")
-        return f"""I don't have access to current web sources to provide a comprehensive answer about "{query}". 
+        
+        # Load fallback prompt from file
+        try:
+            with open('prompts/fallback_answer.txt', 'r', encoding='utf-8') as f:
+                fallback_template = f.read()
+            return fallback_template.format(query=query)
+        except FileNotFoundError:
+            logger.warning(f"   ⚠️ Fallback prompt file not found, using hardcoded fallback")
+            return f"""I don't have access to current web sources to provide a comprehensive answer about "{query}". 
 
 To get accurate and up-to-date information on this topic, I recommend:
 - Consulting authoritative sources and official websites
@@ -739,6 +762,14 @@ def get_research_options(use_defaults=True):
     return options
 
 def main():
+    # Validate configuration and show warnings
+    warnings = config.validate()
+    if warnings:
+        print("\n⚠️  Configuration warnings:")
+        for warning in warnings:
+            print(f"   • {warning}")
+        print()
+    
     show_welcome()
     
     while True:

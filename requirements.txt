@@ -1,0 +1,10 @@
+# Core dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+duckduckgo-search>=4.1.0
+
+# Optional dependencies for enhanced functionality
+# Uncomment if you need additional features
+# beautifulsoup4>=4.12.0
+# lxml>=4.9.0
+# aiohttp>=3.8.0 
