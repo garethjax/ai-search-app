@@ -313,6 +313,19 @@ Questo progetto è sotto licenza MIT. Vedi [LICENSE](LICENSE) per dettagli.
 - [SearX](https://searx.github.io/searx/) per la privacy-first search
 - Tutti i contributori e tester della community
 
----
+## ✍️ Crediti
 
-**⭐ Se questo progetto ti è utile, considera di dargli una stella su GitHub!** 
+![Search Foundry](https://github.com/Search-Foundry/seo-tool-skeleton/raw/master/screenshots/SearchFoundryLogo.svg)
+
+
+- A cura di [Martino Mosna](https://www.martinomosna.com), parte del collettivo [Search Foundry](https://www.searchfoundry.pro)
+
+
+---
+© 2025 Martino Mosna - Founding member of Search Foundry
+
+Made with ❤️ and 🤖
+
+Questo progetto è rilasciato a scopo didattico e sperimentale.
+
+Se ti è stato utile, lascia una ⭐️ su GitHub!
